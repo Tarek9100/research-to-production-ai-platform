@@ -1,0 +1,26 @@
+data:
+  path: data/raw/timeseries.csv
+  sequence_length: 24
+
+model:
+  input_size: 1
+  hidden_size: 64
+  num_layers: 2
+  dropout: 0.1
+
+training:
+  batch_size: 256
+  learning_rate: 0.001
+  epochs: 10
+  seed: 42
+
+runtime:
+  device: auto
+  num_workers: 0
+
+mlflow:
+  experiment_name: research-to-production-ai-platform
+  run_name: lstm-baseline-gpu
+
+artifacts:
+  checkpoint_path: artifacts/checkpoints/lstm_mlflow_best.pt

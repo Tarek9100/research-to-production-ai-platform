@@ -5,8 +5,15 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "research-to-production-ai-platform"
 version = "0.1.0"
-description = "Hands-on research-to-production AI platform project"
+description = "Hands-on MLOps and AI infrastructure portfolio platform"
 requires-python = ">=3.12"
+dependencies = [
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "PyYAML",
+    "mlflow>=3,<4",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]

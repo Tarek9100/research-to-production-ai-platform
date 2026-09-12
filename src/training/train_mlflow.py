@@ -1,6 +1,9 @@
 from pathlib import Path
+import argparse
 import random
 import time
+
+import yaml
 
 import mlflow
 import mlflow.pytorch
@@ -15,29 +18,29 @@ from torch.utils.data import DataLoader
 from src.data.dataset import TimeSeriesDataset
 from src.data.prepare import load_and_split
 from src.models.lstm import LSTMForecaster
-
-
-SEED = 42
-
-DATA_PATH = "data/raw/timeseries.csv"
-
-SEQUENCE_LENGTH = 24
-BATCH_SIZE = 256
-
-HIDDEN_SIZE = 64
-NUM_LAYERS = 2
-DROPOUT = 0.1
-
-LEARNING_RATE = 1e-3
-EPOCHS = 10
-
-EXPERIMENT_NAME = (
-    "research-to-production-ai-platform"
+from src.utils.git_info import (
+    get_git_branch,
+    get_git_commit,
+    is_git_dirty,
 )
+from src.utils.file_hash import sha256_file
 
-CHECKPOINT_PATH = Path(
-    "artifacts/checkpoints/lstm_mlflow_best.pt"
-)
+
+def load_config(path):
+    with open(path, "r") as f:
+        return yaml.safe_load(f)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--config",
+        default="configs/train_baseline.yaml",
+    )
+
+    return parser.parse_args()
+
 
 EVALUATION_DIR = Path(
     "artifacts/evaluation/mlflow"
@@ -65,6 +68,7 @@ def create_loader(
     values,
     shuffle: bool,
     pin_memory: bool,
+    num_workers: int,
 ):
     dataset = TimeSeriesDataset(
         values,
@@ -75,7 +79,7 @@ def create_loader(
         dataset,
         batch_size=BATCH_SIZE,
         shuffle=shuffle,
-        num_workers=0,
+        num_workers=num_workers,
         pin_memory=pin_memory,
     )
 
@@ -136,7 +140,7 @@ def evaluate_test_set(
     )
 
     model = LSTMForecaster(
-        input_size=1,
+        input_size=INPUT_SIZE,
         hidden_size=checkpoint["hidden_size"],
         num_layers=checkpoint["num_layers"],
         dropout=DROPOUT,
@@ -290,13 +294,93 @@ def evaluate_test_set(
 
 def main():
 
+    global DATA_PATH
+    global SEQUENCE_LENGTH
+    global INPUT_SIZE
+    global BATCH_SIZE
+    global HIDDEN_SIZE
+    global NUM_LAYERS
+    global DROPOUT
+    global LEARNING_RATE
+    global EPOCHS
+    global EXPERIMENT_NAME
+    global CHECKPOINT_PATH
+
+    args = parse_args()
+
+    config = load_config(
+        args.config
+    )
+
+    DATA_PATH = config["data"]["path"]
+    SEQUENCE_LENGTH = int(
+        config["data"]["sequence_length"]
+    )
+
+    INPUT_SIZE = int(
+        config["model"]["input_size"]
+    )
+
+    BATCH_SIZE = int(
+        config["training"]["batch_size"]
+    )
+
+    HIDDEN_SIZE = int(
+        config["model"]["hidden_size"]
+    )
+
+    NUM_LAYERS = int(
+        config["model"]["num_layers"]
+    )
+
+    DROPOUT = float(
+        config["model"]["dropout"]
+    )
+
+    LEARNING_RATE = float(
+        config["training"]["learning_rate"]
+    )
+
+    EPOCHS = int(
+        config["training"]["epochs"]
+    )
+
+    SEED = int(
+        config["training"]["seed"]
+    )
+
+    EXPERIMENT_NAME = (
+        config["mlflow"]["experiment_name"]
+    )
+
+    RUN_NAME = (
+        config["mlflow"]["run_name"]
+    )
+
+    CHECKPOINT_PATH = Path(
+        config["artifacts"]["checkpoint_path"]
+    )
+
+    num_workers = int(
+        config["runtime"]["num_workers"]
+    )
+
+    requested_device = (
+        config["runtime"]["device"]
+    )
+
     set_seed(SEED)
 
-    device = torch.device(
-        "cuda"
-        if torch.cuda.is_available()
-        else "cpu"
-    )
+    if requested_device == "auto":
+        device = torch.device(
+            "cuda"
+            if torch.cuda.is_available()
+            else "cpu"
+        )
+    else:
+        device = torch.device(
+            requested_device
+        )
 
     pin_memory = (
         device.type == "cuda"
@@ -310,12 +394,14 @@ def main():
         splits.train,
         shuffle=True,
         pin_memory=pin_memory,
+        num_workers=num_workers,
     )
 
     validation_loader = create_loader(
         splits.validation,
         shuffle=False,
         pin_memory=pin_memory,
+        num_workers=num_workers,
     )
 
     model = LSTMForecaster(
@@ -347,11 +433,69 @@ def main():
     )
 
     with mlflow.start_run(
-        run_name="lstm-baseline-gpu"
+        run_name=RUN_NAME
     ) as run:
 
         print("MLflow run ID:")
         print(run.info.run_id)
+        print()
+
+        git_commit = get_git_commit()
+        git_branch = get_git_branch()
+        git_dirty = is_git_dirty()
+
+        if git_commit is not None:
+            mlflow.set_tag(
+                "git.commit",
+                git_commit,
+            )
+
+        if git_branch is not None:
+            mlflow.set_tag(
+                "git.branch",
+                git_branch,
+            )
+
+        if git_dirty is not None:
+            mlflow.set_tag(
+                "git.dirty",
+                str(git_dirty).lower(),
+            )
+
+        print("Git commit:", git_commit)
+        print("Git branch:", git_branch)
+        print("Git dirty:", git_dirty)
+        print()
+
+        dataset_sha256 = sha256_file(
+            DATA_PATH
+        )
+
+        mlflow.set_tag(
+            "dataset.sha256",
+            dataset_sha256,
+        )
+
+        mlflow.set_tag(
+            "config.path",
+            args.config,
+        )
+
+        mlflow.log_artifact(
+            args.config,
+            artifact_path="config",
+        )
+
+        print(
+            "Dataset SHA-256:",
+            dataset_sha256,
+        )
+
+        print(
+            "Config:",
+            args.config,
+        )
+
         print()
 
         mlflow.log_params(
