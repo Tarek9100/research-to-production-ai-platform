@@ -1,0 +1,5 @@
+[core]
+    remote = minio
+['remote "minio"']
+    url = s3://mlops-datasets/research-to-production-ai-platform
+    endpointurl = http://127.0.0.1:9000
