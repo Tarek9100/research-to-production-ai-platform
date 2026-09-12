@@ -24,6 +24,7 @@ from src.utils.git_info import (
     is_git_dirty,
 )
 from src.utils.file_hash import sha256_file
+from src.utils.dvc_info import get_dvc_metadata
 
 
 def load_config(path):
@@ -471,9 +472,46 @@ def main():
             DATA_PATH
         )
 
+        dvc_info = get_dvc_metadata(
+            DATA_PATH
+        )
+
         mlflow.set_tag(
             "dataset.sha256",
             dataset_sha256,
+        )
+
+        if dvc_info is not None:
+
+            mlflow.set_tag(
+                "dataset.versioning",
+                "dvc",
+            )
+
+            mlflow.set_tag(
+                "dataset.dvc_file",
+                dvc_info["dvc_file"],
+            )
+
+            mlflow.set_tag(
+                "dataset.dvc_hash_type",
+                dvc_info["hash_type"],
+            )
+
+            mlflow.set_tag(
+                "dataset.dvc_hash",
+                dvc_info["hash"],
+            )
+
+            if dvc_info["size"] is not None:
+                mlflow.log_param(
+                    "dataset_size_bytes",
+                    dvc_info["size"],
+                )
+
+        mlflow.set_tag(
+            "dataset.remote",
+            "minio",
         )
 
         mlflow.set_tag(
@@ -489,6 +527,23 @@ def main():
         print(
             "Dataset SHA-256:",
             dataset_sha256,
+        )
+
+        if dvc_info is not None:
+            print(
+                "Dataset DVC hash:",
+                f'{dvc_info["hash_type"]}:'
+                f'{dvc_info["hash"]}',
+            )
+
+            print(
+                "Dataset DVC file:",
+                dvc_info["dvc_file"],
+            )
+
+        print(
+            "Dataset remote:",
+            "minio",
         )
 
         print(
