@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+
+# Python tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# MLflow local state
+mlflow.db
+mlruns/
+
+# Generated artifacts
+artifacts/
+
+# Logs
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.swp
+
+# Generated Python package metadata
+*.egg-info/
+
+# Generated datasets
+data/raw/*.csv
+data/processed/*
