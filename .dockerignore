@@ -1,0 +1,37 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# MLflow runtime state
+mlflow.db
+mlruns/
+
+# Generated training artifacts
+artifacts/
+
+# Dataset payloads
+# DVC metadata remains included.
+data/raw/*.csv
+data/processed/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp
+*.swp
+
+# DVC local cache and secrets
+.dvc/cache/
+.dvc/tmp/
+.dvc/config.local
