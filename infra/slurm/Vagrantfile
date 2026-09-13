@@ -1,0 +1,66 @@
+Vagrant.configure("2") do |config|
+
+  config.vm.box = "ubuntu/jammy64"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.gui = false
+  end
+
+  nodes = {
+    "slurm-controller" => {
+      ip: "192.168.56.20",
+      cpus: 2,
+      memory: 2048
+    },
+
+    "slurm-compute01" => {
+      ip: "192.168.56.21",
+      cpus: 2,
+      memory: 2048
+    },
+
+    "slurm-compute02" => {
+      ip: "192.168.56.22",
+      cpus: 2,
+      memory: 2048
+    }
+  }
+
+  nodes.each do |name, node|
+
+    config.vm.define name do |machine|
+
+      machine.vm.hostname = name
+
+      machine.vm.network \
+        "private_network",
+        ip: node[:ip]
+
+      machine.vm.provider "virtualbox" do |vb|
+        vb.name = name
+        vb.cpus = node[:cpus]
+        vb.memory = node[:memory]
+      end
+
+      machine.vm.provision "shell", inline: <<-SHELL
+        set -e
+
+        echo "192.168.56.20 slurm-controller" >> /etc/hosts
+        echo "192.168.56.21 slurm-compute01" >> /etc/hosts
+        echo "192.168.56.22 slurm-compute02" >> /etc/hosts
+
+        apt-get update -y
+
+        apt-get install -y \
+          curl \
+          vim \
+          htop \
+          jq \
+          chrony
+
+        systemctl enable --now chrony
+      SHELL
+    end
+
+  end
+end
