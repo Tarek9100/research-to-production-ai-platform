@@ -5,6 +5,11 @@ cd /workspace
 
 echo "===== TRAINING CONTAINER ====="
 
+# The runtime image intentionally does not contain .git.
+# Git lineage is injected as immutable build metadata instead.
+# DVC therefore operates in supported no-SCM mode inside the container.
+dvc config --local core.no_scm true
+
 if [[ -n "${MINIO_ENDPOINT:-}" ]]; then
     echo "Configuring DVC MinIO endpoint: ${MINIO_ENDPOINT}"
 
