@@ -6,6 +6,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /workspace
 
+ARG SOURCE_GIT_COMMIT
+ARG SOURCE_GIT_BRANCH
+ARG SOURCE_GIT_DIRTY
+
+ENV SOURCE_GIT_COMMIT=${SOURCE_GIT_COMMIT} \
+    SOURCE_GIT_BRANCH=${SOURCE_GIT_BRANCH} \
+    SOURCE_GIT_DIRTY=${SOURCE_GIT_DIRTY}
+
+LABEL org.opencontainers.image.revision=${SOURCE_GIT_COMMIT}
+
 # git is required by the current experiment-lineage helper.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -30,7 +40,6 @@ COPY configs /workspace/configs
 COPY data/raw/timeseries.csv.dvc /workspace/data/raw/timeseries.csv.dvc
 COPY .dvc /workspace/.dvc
 COPY .dvcignore /workspace/.dvcignore
-COPY .git /workspace/.git
 
 CMD ["python", "-c", "import torch; print(torch.__version__)"]
 
