@@ -25,6 +25,7 @@ from src.utils.git_info import (
 )
 from src.utils.file_hash import sha256_file
 from src.utils.dvc_info import get_dvc_metadata
+from src.utils.runtime_info import get_container_runtime_metadata
 
 
 def load_config(path):
@@ -466,6 +467,30 @@ def main():
         print("Git commit:", git_commit)
         print("Git branch:", git_branch)
         print("Git dirty:", git_dirty)
+
+        runtime_metadata = (
+            get_container_runtime_metadata()
+        )
+
+        if runtime_metadata:
+            mlflow.set_tags(
+                runtime_metadata
+            )
+
+            print(
+                "Container image tag:",
+                runtime_metadata.get(
+                    "container.image_tag"
+                ),
+            )
+
+            print(
+                "Container image ID:",
+                runtime_metadata.get(
+                    "container.image_id"
+                ),
+            )
+
         print()
 
         dataset_sha256 = sha256_file(
