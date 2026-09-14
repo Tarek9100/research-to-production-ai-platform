@@ -38,3 +38,6 @@ Thumbs.db
 # Generated datasets
 data/raw/*.csv
 data/processed/*
+
+# Vagrant runtime state
+infra/slurm/.vagrant/
