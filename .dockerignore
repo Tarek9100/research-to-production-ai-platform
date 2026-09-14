@@ -35,3 +35,8 @@ Thumbs.db
 .dvc/cache/
 .dvc/tmp/
 .dvc/config.local
+
+# Allow the one immutable checkpoint used by the KServe demo image
+!artifacts/
+!artifacts/checkpoints/
+!artifacts/checkpoints/lstm_weekly_context.pt
