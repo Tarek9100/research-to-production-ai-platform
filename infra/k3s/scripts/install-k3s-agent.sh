@@ -5,6 +5,7 @@ set -euo pipefail
 K3S_VERSION="v1.34.11+k3s1"
 K3S_URL="https://192.168.56.30:6443"
 NODE_IP="192.168.56.31"
+FLANNEL_IFACE="enp0s8"
 
 TOKEN="${1:-}"
 
@@ -20,7 +21,8 @@ curl -sfL https://get.k3s.io | \
   K3S_URL="${K3S_URL}" \
   K3S_TOKEN="${TOKEN}" \
   sh -s - agent \
-    --node-ip="${NODE_IP}"
+    --node-ip="${NODE_IP}" \
+    --flannel-iface="${FLANNEL_IFACE}"
 
 echo
 echo "===== K3S AGENT ====="
