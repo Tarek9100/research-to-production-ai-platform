@@ -1,9 +1,25 @@
 Vagrant.configure("2") do |config|
 
+  # The project lives on the WSL ext4 filesystem while
+  # VirtualBox runs on Windows. Disable Vagrant's default
+  # /vagrant shared folder because VirtualBox cannot share
+  # a WSL-native host path.
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
   config.vm.box = "ubuntu/jammy64"
 
   config.vm.provider "virtualbox" do |vb|
     vb.gui = false
+
+    # VirtualBox runs on Windows while Vagrant runs in WSL.
+    # The Ubuntu box configures UART logging to /dev/null,
+    # which is not a valid Windows path. Disconnect UART.
+    vb.customize [
+      "modifyvm",
+      :id,
+      "--uartmode1",
+      "disconnected"
+    ]
   end
 
   nodes = {
