@@ -1,0 +1,79 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+
+  # Repository is on the WSL filesystem, so VirtualBox cannot use it as
+  # a Windows shared folder.
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  windows_host_ip =
+    ENV["VAGRANT_WSL_HOST_IP"] ||
+    `ip route show default | awk '{print $3}'`.strip
+
+  raise "Could not determine WSL Windows host IP" if windows_host_ip.empty?
+
+  nodes = {
+    "k3s-cp1" => {
+      ip: "192.168.56.30",
+      ssh_port: 2230,
+      cpus: 2,
+      memory: 3072
+    },
+    "k3s-w1" => {
+      ip: "192.168.56.31",
+      ssh_port: 2231,
+      cpus: 2,
+      memory: 3072
+    }
+  }
+
+  nodes.each do |name, node|
+    config.vm.define name do |machine|
+      machine.vm.hostname = name
+
+      machine.vm.network \
+        "private_network",
+        ip: node[:ip]
+
+      machine.vm.network \
+        "forwarded_port",
+        guest: 22,
+        host: node[:ssh_port],
+        host_ip: "0.0.0.0",
+        id: "ssh",
+        auto_correct: false
+
+      # WSL reaches VirtualBox's NAT forwarding through the Windows host.
+      machine.ssh.host = windows_host_ip
+      machine.ssh.guest_port = 22
+
+      machine.vm.provider "virtualbox" do |vb|
+        vb.name = name
+        vb.gui = false
+        vb.cpus = node[:cpus]
+        vb.memory = node[:memory]
+
+        # ubuntu/jammy64 otherwise tries to use /dev/null for the UART,
+        # which Windows VirtualBox cannot resolve from WSL.
+        vb.customize [
+          "modifyvm",
+          :id,
+          "--uartmode1",
+          "disconnected"
+        ]
+      end
+
+      machine.vm.provision "shell", inline: <<-SHELL
+        set -e
+
+        grep -q '192.168.56.30 k3s-cp1' /etc/hosts || \
+          echo '192.168.56.30 k3s-cp1' >> /etc/hosts
+
+        grep -q '192.168.56.31 k3s-w1' /etc/hosts || \
+          echo '192.168.56.31 k3s-w1' >> /etc/hosts
+
+        apt-get update -y
+        apt-get install -y curl ca-certificates jq
+      SHELL
+    end
+  end
+end
