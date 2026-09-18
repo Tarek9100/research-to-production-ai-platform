@@ -9,43 +9,38 @@ infrastructure patterns used in production AI platforms.
 
 ## Architecture
 
-    Dataset
-       |
-       v
+![Research-to-Production AI Platform Architecture](docs/architecture/research-to-production-ai-platform.png)
+
+The platform separates the ML lifecycle into reproducible training and
+experimentation, model governance, HPC scheduling experiments, and
+Kubernetes-based model serving.
+
+### End-to-End Flow
+
     DVC + MinIO
-       |
-       v
-    PyTorch Training
-       |
-       +------> GPU experiments
-       |
-       v
-    MLflow
-       |
-       +------> experiment tracking
-       +------> model packaging
-       +------> model registry
-       +------> baseline quality gate
-       |
-       v
-    Slurm
-       |
-       +------> finite training jobs
-       +------> resource scheduling
-       +------> contention / pending jobs
-       |
-       v
-    Kubernetes / K3s
-       |
-       v
-    KServe + Knative + Istio
-       |
-       +------> scale-to-zero
-       +------> cold start
-       +------> inference
-       |
-       v
+         |
+         v
+    PyTorch GPU Training
+         |
+         v
+    MLflow Tracking / Registry
+         |
+         v
+    Model Quality Gate
+         |
+         v
+    KServe / Knative / Kubernetes
+         |
+         v
     Prometheus + Grafana
+
+The Slurm environment is a separate three-node HPC scheduling lab used to
+demonstrate resource allocation, multi-node jobs, contention, pending states,
+and scheduler behavior.
+
+The PyTorch LSTM training itself was executed in a CUDA-enabled Docker
+container on the local NVIDIA GPU through WSL2. It was not executed through
+the Slurm cluster.
 
 ## What This Project Demonstrates
 
